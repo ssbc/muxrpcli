@@ -41,7 +41,7 @@ Usage-calls are the help which is output when a command fails, or when help is r
 They are used in the following situations:
 
  - If the command does not exist in the RPC server's manifest, does a top-level usage call.
- - If the command responses with a `UsageError`, `BadParamError`, or `BadArgError`, does a usage call for that command.
+ - If the command responses with a `TypeError`, `UsageError`, `BadParamError`, or `BadArgError`, does a usage call for that command.
  - If the `-h` or `--help` switches are given, does a toplevel or command usage call.
 
 A usage-call is a call to the `usage(cmd)` function on the RPC server.

@@ -5,7 +5,8 @@ var pull     = require('pull-stream')
 var usageErrors = [
   'UsageError',
   'BadParamError',
-  'BadArgError'
+  'BadArgError',
+  'TypeError'
 ]
 
 var isBuffer = Buffer.isBuffer
@@ -50,13 +51,11 @@ function usage (cmd, manifest, rpc) {
 }
 
 function onerror (err, cmd, manifest, rpc) {
-  if (isUsageError(err)) {
-    console.log(err.name + ': ' + err.message)
+  console.error(err.name + ': ' + err.message)
+  if (isUsageError(err))
     usage(cmd, rpc, manifest)
-  } else {
-    console.error(err)
+  else
     return process.exit(1)
-  }
 }
 
 module.exports = function (argv, manifest, rpc) {
