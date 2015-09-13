@@ -99,7 +99,8 @@ module.exports = function (argv, manifest, rpc) {
       get(rpc, cmd).apply(null, args.concat([function (err, ret) {
         if (err)
           return onerror(err, cmd, rpc, manifest)
-        console.log(JSON.stringify(ret, null, 2))
+        if (typeof ret != 'undefined')
+          console.log(JSON.stringify(ret, null, 2))
         process.exit()
       }]))
     }
@@ -119,7 +120,8 @@ module.exports = function (argv, manifest, rpc) {
         get(rpc, cmd).apply(null, args.concat([function (err, res) {
           if (err) 
             return onerror(err, cmd, rpc, manifest)
-          console.log(JSON.stringify(res, null, 2))
+          if (typeof ret != 'undefined')
+            console.log(JSON.stringify(res, null, 2))
           process.exit()
         }]))
       )
