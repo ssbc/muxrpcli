@@ -1,6 +1,7 @@
 var minimist = require('minimist')
 var toPull   = require('stream-to-pull-stream')
 var pull     = require('pull-stream')
+var wrap     = require('word-wrap')
 
 var usageErrors = [
   'UsageError',
@@ -45,7 +46,7 @@ function usage (cmd, manifest, rpc) {
   function next (err, str) {
     if (err)
       str = err.toString()
-    console.error(str)
+    console.error(str.split('\n').map(function (v) { return wrap(v, { width: process.stdout.columns-5, indent: '' }) }).join('\n'))
     process.exit(1)
   }
 }
