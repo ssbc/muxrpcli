@@ -45,7 +45,7 @@ function usage (cmd, manifest, rpc) {
 
   function next (err, str) {
     if (err)
-      str = err.toString()
+      str = ''+(err.message || err)
     console.error(str.split('\n').map(function (v) { return wrap(v, { width: process.stdout.columns-5, indent: '' }) }).join('\n'))
     process.exit(1)
   }
@@ -125,6 +125,10 @@ module.exports = function (argv, manifest, rpc) {
           process.exit()
         }]))
       )
+    else if (typeof cmdType == 'object' && cmdType) {
+      // it may be a sub-object manifest, try getting usage for it
+      usage(cmd, manifest, rpc)
+    }
     else {
       console.error('Invalid Manifest:', cmdType, 'is not a valid method-type')
       process.exit(1)
