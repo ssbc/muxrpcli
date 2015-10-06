@@ -76,8 +76,10 @@ module.exports = function (argv, manifest, rpc) {
     return usage(cmd, manifest, rpc)
   cmd = cmd.split('.')
   var cmdType = get(manifest, cmd)
-  if (!cmdType)
+  if (!cmdType) {
+    console.error('Command not found: '+cmd.join('.'))
     return usage(false, manifest, rpc)
+  }
 
   // handle stdin-mode
   if(!process.stdin.isTTY && isStdin) {
