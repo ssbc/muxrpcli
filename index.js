@@ -98,11 +98,11 @@ module.exports = function (argv, manifest, rpc) {
   function next (args) {
 
     if ('async' === cmdType || cmdType === 'sync') {
-      get(rpc, cmd).apply(null, args.concat([function (err, ret) {
+      get(rpc, cmd).apply(null, args.concat([function (err, res) {
         if (err)
           return onerror(err, cmd, rpc, manifest)
-        if (typeof ret != 'undefined')
-          console.log(JSON.stringify(ret, null, 2))
+        if (typeof res != 'undefined')
+          console.log(JSON.stringify(res, null, 2))
         process.exit()
       }]))
     }
@@ -122,7 +122,7 @@ module.exports = function (argv, manifest, rpc) {
         get(rpc, cmd).apply(null, args.concat([function (err, res) {
           if (err) 
             return onerror(err, cmd, rpc, manifest)
-          if (typeof ret != 'undefined')
+          if (typeof res != 'undefined')
             console.log(JSON.stringify(res, null, 2))
           process.exit()
         }]))
