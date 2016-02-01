@@ -4,6 +4,11 @@ Command-line interface to [muxrpc](https://github.com/ssbc/muxrpc) servers.
 Works by converting the command-line parameters into args for the RPC calls.
 Also adds some standard behaviors for usage calls.
 
+**Standard Switches**:
+
+ - `--oneline` put json output on one line.
+ - `-h / --help` usage.
+
 ## CLI Parameters
 
 Parameters are parsed with [minimist](https://www.npmjs.com/package/minimist).

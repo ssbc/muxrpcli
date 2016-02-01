@@ -21,10 +21,16 @@ function isUsageError (err) {
   return usageErrors.indexOf(err.name) >= 0
 }
 
-function maybeStringify () {
+function stringify (obj, opts) {
+  if (opts && opts.oneline)
+    return JSON.stringify(obj) + '\n'
+  return JSON.stringify(obj, null, 2) + '\n\n'
+}
+
+function maybeStringify (opts) {
   return pull.map(function (b) {
     if(isBuffer(b)) return b
-    return JSON.stringify(b, null, 2) + '\n\n'
+    return stringify(b, opts)
   })
 }
 
@@ -102,14 +108,14 @@ module.exports = function (argv, manifest, rpc) {
         if (err)
           return onerror(err, cmd, rpc, manifest)
         if (typeof res != 'undefined')
-          console.log(JSON.stringify(res, null, 2))
+          stringify(res, { oneline: parsedArgv.oneline })
         process.exit()
       }]))
     }
     else if ('source' === cmdType)
       pull(
         get(rpc, cmd).apply(null, args),
-        maybeStringify(),
+        maybeStringify({ oneline: parsedArgv.oneline }),
         toPull.sink(process.stdout, function (err) {
           if (err) 
             return onerror(err, cmd, rpc, manifest)
@@ -123,7 +129,7 @@ module.exports = function (argv, manifest, rpc) {
           if (err) 
             return onerror(err, cmd, rpc, manifest)
           if (typeof res != 'undefined')
-            console.log(JSON.stringify(res, null, 2))
+            stringify(res, { oneline: parsedArgv.oneline })
           process.exit()
         }]))
       )
