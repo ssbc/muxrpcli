@@ -6,8 +6,8 @@ var wrap     = require('word-wrap')
 var usageErrors = [
   'UsageError',
   'BadParamError',
-  'BadArgError',
-  'TypeError'
+  'BadArgError'
+  //'TypeError'
 ]
 
 var isBuffer = Buffer.isBuffer
@@ -52,11 +52,13 @@ function usage (cmd, manifest, rpc) {
 }
 
 function onerror (err, cmd, manifest, rpc) {
-  console.error(err.name + ': ' + err.message)
-  if (isUsageError(err))
+  if (isUsageError(err)) {
+    console.error(err.name + ': ' + err.message)
     usage(cmd, rpc, manifest)
+  }
   else
-    return process.exit(1)
+    //otherwise it's a programmer error, so we need the stacktrace.
+    throw err
 }
 
 module.exports = function (argv, manifest, rpc) {
@@ -137,3 +139,5 @@ module.exports = function (argv, manifest, rpc) {
     }
   }
 }
+
+
