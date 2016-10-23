@@ -35,37 +35,39 @@ function get(obj, path) {
   return obj
 }
 
-function usage (cmd, manifest, rpc) {
-  var usageType = get(manifest, ['usage'])
-  var usageCmd  = get(rpc, ['usage'])
-  if (!usageType || !usageCmd || (usageType != 'sync' && usageType != 'async'))
-    next(null, 'Invalid command')
-  else
-    usageCmd(Array.isArray(cmd) ? cmd.join('.') : cmd, next)
-
-  function next (err, str) {
-    if (err)
-      str = ''+(err.message || err)
-    console.error(str.split('\n').map(function (v) { return wrap(v, { width: process.stdout.columns-5, indent: '' }) }).join('\n'))
-    process.exit(1)
-  }
-}
-
-function onerror (err, cmd, manifest, rpc) {
-  if (isUsageError(err)) {
-    console.error(err.name + ': ' + err.message)
-    usage(cmd, rpc, manifest)
-  }
-  else
-    //otherwise it's a programmer error, so we need the stacktrace.
-    throw err
-}
-
-module.exports = function (argv, manifest, rpc) {
+module.exports = function (argv, manifest, rpc, verbose) {
   // parse out `cmd`, `args`, and `isStdin`
   var parsedArgv = minimist(argv)
   var cmd = parsedArgv._[0], args = parsedArgv._.slice(1)
-  var isStdin = ('.' === args[0] || '--' === args[0])
+  var isStdin = '.' === args[0]
+
+  function usage (cmd) {
+    var usageType = get(manifest, ['usage'])
+    var usageCmd  = get(rpc, ['usage'])
+    if (!usageType || !usageCmd || (usageType != 'sync' && usageType != 'async'))
+      next(null, 'Invalid command')
+    else
+      usageCmd(Array.isArray(cmd) ? cmd.join('.') : cmd, next)
+
+    function next (err, str) {
+      if (err)
+        str = ''+(err.message || err)
+      console.error(str.split('\n').map(function (v) { return wrap(v, { width: process.stdout.columns-5, indent: '' }) }).join('\n'))
+      process.exit(1)
+    }
+  }
+
+  function onError (err) {
+    if (isUsageError(err)) {
+      console.error(err.name + ': ' + err.message)
+      usage(cmd)
+      process.exit(1)
+    }
+    else
+      //otherwise it's a programmer error, so we need the stacktrace.
+      throw err
+  }
+
 
   delete parsedArgv._
   if (Object.keys(parsedArgv).length)
@@ -73,14 +75,14 @@ module.exports = function (argv, manifest, rpc) {
 
   // route to the command
   if (!cmd)
-    return usage(false, manifest, rpc)
+    return usage(false)
   if (parsedArgv.h || parsedArgv.help)
-    return usage(cmd, manifest, rpc)
+    return usage(cmd)
   cmd = cmd.split('.')
   var cmdType = get(manifest, cmd)
   if (!cmdType) {
     console.error('Command not found: '+cmd.join('.'))
-    return usage(false, manifest, rpc)
+    return usage(false)
   }
 
   // handle stdin-mode
@@ -101,8 +103,7 @@ module.exports = function (argv, manifest, rpc) {
 
     if ('async' === cmdType || cmdType === 'sync') {
       get(rpc, cmd).apply(null, args.concat([function (err, res) {
-        if (err)
-          return onerror(err, cmd, rpc, manifest)
+        if (err) return onError(err)
         if (typeof res != 'undefined')
           console.log(JSON.stringify(res, null, 2))
         process.exit()
@@ -113,8 +114,8 @@ module.exports = function (argv, manifest, rpc) {
         get(rpc, cmd).apply(null, args),
         maybeStringify(),
         toPull.sink(process.stdout, function (err) {
-          if (err) 
-            return onerror(err, cmd, rpc, manifest)
+          if (err)
+            return onError(err)
           process.exit()
         })
       )
@@ -122,8 +123,8 @@ module.exports = function (argv, manifest, rpc) {
       pull(
         toPull.source(process.stdin),
         get(rpc, cmd).apply(null, args.concat([function (err, res) {
-          if (err) 
-            return onerror(err, cmd, rpc, manifest)
+          if (err)
+            return onError(err)
           if (typeof res != 'undefined')
             console.log(JSON.stringify(res, null, 2))
           process.exit()
@@ -139,5 +140,4 @@ module.exports = function (argv, manifest, rpc) {
     }
   }
 }
-
 
