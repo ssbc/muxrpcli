@@ -15,9 +15,10 @@
   "license": "MIT",
   "dependencies": {
     "minimist": "^1.2.0",
-    "pull-stream": "^2.28.3",
-    "stream-to-pull-stream": "^1.6.6",
-    "word-wrap": "^1.1.0"
+    "pull-stream": "^3.6.9",
+    "stream-to-pull-stream": "^1.7.3",
+    "word-wrap": "^1.2.3",
+    "muxrpc-usage": "^1.0.0"
   },
   "devDependencies": {
     "zerr": "^1.0.0"
