@@ -3,6 +3,7 @@ var toPull   = require('stream-to-pull-stream')
 var pull     = require('pull-stream')
 var wrap     = require('word-wrap')
 var Usage = require('muxrpc-usage')
+var cont = require('cont')
 
 var usageErrors = [
   'UsageError',
@@ -17,6 +18,9 @@ function isObject (o) {
 }
 function isString (s) {
   return 'string' === typeof s
+}
+function isObject (o) {
+  return o && 'object' === typeof o
 }
 function isUsageError (err) {
   return usageErrors.indexOf(err.name) >= 0
@@ -34,6 +38,18 @@ function get(obj, path) {
     obj = obj ? obj[k] : null
   })
   return obj
+}
+
+function output (data, opts, helpPath, _cmd) {
+  if(opts.json) console.log(JSON.stringify(data, null, 2))
+  else if(Usage.get(data, helpPath)) {
+    console.log(opts.deep ? Usage.deep(data, helpPath, _cmd) : Usage.quick(data, helpPath, _cmd))
+  }
+  else {
+    console.log({cmd: _cmd, help: helpPath})
+    console.log('missing command:', _cmd.concat(helpPath).join('.'))
+    console.log(Usage.quick(data, [], _cmd))
+  }
 }
 
 module.exports = function (argv, manifest, rpc, verbose) {
@@ -61,12 +77,41 @@ module.exports = function (argv, manifest, rpc, verbose) {
       help (function (err, data) {
         if(err) onError(err)
         var helpPath = cmd.slice(_cmd.length)
-        console.log(opts.deep ? Usage.deep(data, helpPath, _cmd) : Usage.quick(data, helpPath, _cmd))
-        process.exit(1)
+        //top level commands
+        output(data, opts, helpPath, _cmd)
+
+        function done () {
+          //exit non-zero if user specifically requested help
+          process.exit(opts.help ? 0 : 1)
+        }
+
+        if(Usage.get(data, helpPath) && Usage.isCommand(Usage.get(data, helpPath))) {
+          return done()
+        }
+
+        //iterate over subgroups, and check if they have built in help.
+        var submanifest = get(manifest, _cmd)
+        cont.para(Object.keys(submanifest).filter(function (key) {
+          return isObject(submanifest[key])
+        }).map(function (key) {
+          if(submanifest[key].help) {
+            return function (cb) {
+              get(rpc, _cmd.concat([key, 'help']))(function (err, data) {
+                console.log(_cmd.concat(key).join('.') + ' # ' + data.description)
+                cb()
+              })
+            }
+          } else
+            return function (cb) {
+              if(opts.undocumented) //default=false, show undocumented commands
+                console.log(_cmd.concat(key).join('.') + ' # (undocumented!) ')
+              cb()
+            }
+        }))(done)
       })
     } else if(!help) {
       console.error('at command:', cmd)
-      throw new Error('help command is missing!')
+      throw new Error('help command is missing from!' + cmd.join('.'))
     }
   }
 
@@ -83,7 +128,7 @@ module.exports = function (argv, manifest, rpc, verbose) {
 
   // route to the command
   if (!cmd)                return usage([]) //print shallow help
-  else if(opts.help) return usage(cmd, {deep: true})
+  else if(opts.help) return usage(cmd, Object.assign({deep: true}, opts))
 
   var cmdType = get(manifest, cmd)
   if(!cmdType)
@@ -106,7 +151,6 @@ module.exports = function (argv, manifest, rpc, verbose) {
     next(args)
 
   function next (args) {
-
     if ('async' === cmdType || cmdType === 'sync') {
       get(rpc, cmd).apply(null, args.concat([function (err, res) {
         if (err) return onError(err)
