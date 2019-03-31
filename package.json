@@ -14,11 +14,12 @@
   "author": "Paul Frazee <pfrazee@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "cont": "^1.0.3",
     "minimist": "^1.2.0",
+    "muxrpc-usage": "^2.0.1",
     "pull-stream": "^3.6.9",
     "stream-to-pull-stream": "^1.7.3",
-    "word-wrap": "^1.2.3",
-    "muxrpc-usage": "^1.0.0"
+    "word-wrap": "^1.2.3"
   },
   "devDependencies": {
     "zerr": "^1.0.0"
