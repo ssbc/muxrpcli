@@ -2,6 +2,7 @@ var minimist = require('minimist')
 var toPull   = require('stream-to-pull-stream')
 var pull     = require('pull-stream')
 var wrap     = require('word-wrap')
+var Usage = require('muxrpc-usage')
 
 var usageErrors = [
   'UsageError',
@@ -37,30 +38,41 @@ function get(obj, path) {
 
 module.exports = function (argv, manifest, rpc, verbose) {
   // parse out `cmd`, `args`, and `isStdin`
-  var parsedArgv = minimist(argv)
-  var cmd = parsedArgv._[0], args = parsedArgv._.slice(1)
+  var opts = minimist(argv)
+  var cmd = opts._[0], args = opts._.slice(1)
   var isStdin = '.' === args[0]
+  if(!cmd) cmd = []
+  else cmd = cmd.split('.')
+  delete opts._
+  if (Object.keys(opts).length)
+    args.push(opts)
 
-  function usage (cmd) {
-    var usageType = get(manifest, ['usage'])
-    var usageCmd  = get(rpc, ['usage'])
-    if (!usageType || !usageCmd || (usageType != 'sync' && usageType != 'async'))
-      next(null, 'Invalid command')
-    else
-      usageCmd(Array.isArray(cmd) ? cmd.join('.') : cmd, next)
+  function usage (cmd, opts) {
+    // find the closest full help command. foo.bazCommand becomes foo.help (probably).
 
-    function next (err, str) {
-      if (err)
-        str = ''+(err.message || err)
-      console.error(str.split('\n').map(function (v) { return wrap(v, { width: process.stdout.columns-5, indent: '' }) }).join('\n'))
-      process.exit(1)
+    var _cmd = cmd.slice()
+      //find the highest match, and print quick usage there
+      while(!get(manifest, _cmd.concat('help')) && _cmd.length)
+        { _cmd.pop() }
+
+    var help = get(rpc, _cmd.concat('help'))
+    opts = opts || {}
+    if(help) {
+      help (function (err, data) {
+        if(err) onError(err)
+        var helpPath = cmd.slice(_cmd.length)
+        console.log(opts.deep ? Usage.deep(data, helpPath, _cmd) : Usage.quick(data, helpPath, _cmd))
+        process.exit(1)
+      })
+    } else if(!help) {
+      console.error('at command:', cmd)
+      throw new Error('help command is missing!')
     }
   }
 
   function onError (err) {
     if (isUsageError(err)) {
-      console.error(err.name + ': ' + err.message)
-      usage(cmd)
+      console.error(err.message)
       process.exit(1)
     }
     else
@@ -69,23 +81,17 @@ module.exports = function (argv, manifest, rpc, verbose) {
   }
 
 
-  delete parsedArgv._
-  if (Object.keys(parsedArgv).length)
-    args.push(parsedArgv)
-
   // route to the command
-  if (!cmd)
-    return usage(false)
-  if (parsedArgv.h || parsedArgv.help)
-    return usage(cmd)
-  cmd = cmd.split('.')
-  var cmdType = get(manifest, cmd)
-  if (!cmdType) {
-    console.error('Command not found: '+cmd.join('.'))
-    return usage(false)
-  }
+  if (!cmd)                return usage([]) //print shallow help
+  else if(opts.help) return usage(cmd, {deep: true})
 
-  // handle stdin-mode
+  var cmdType = get(manifest, cmd)
+  if(!cmdType)
+    return usage(cmd)
+
+  // handle stdin-mode.
+  // XXX this makes sense when it's async or sync
+  // if it's a sink, should stream it in.
   if(!process.stdin.isTTY && isStdin) {
     pull(
       toPull.source(process.stdin),
@@ -132,6 +138,7 @@ module.exports = function (argv, manifest, rpc, verbose) {
       )
     else if (typeof cmdType == 'object' && cmdType) {
       // it may be a sub-object manifest, try getting usage for it
+      //HELP quick usage for this command.
       usage(cmd, manifest, rpc)
     }
     else {
