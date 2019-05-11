@@ -12,7 +12,8 @@ function isAddress (v) {
 var manifest = {
   usage: 'async',
   whoami: 'async',
-  ping: 'async'
+  ping: 'async',
+  help: 'sync'
 }
 
 var api = {
