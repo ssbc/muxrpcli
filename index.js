@@ -110,7 +110,8 @@ module.exports = function (argv, manifest, rpc, verbose) {
         }))(done)
       })
     } else if(!help) {
-      console.error('at command:', cmd)
+      if(cmd.length === 0)
+        throw new Error('help command completely missing on server, please upgrade server')
       throw new Error('help command is missing from!' + cmd.join('.'))
     }
   }
@@ -191,4 +192,5 @@ module.exports = function (argv, manifest, rpc, verbose) {
     }
   }
 }
+
 
