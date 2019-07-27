@@ -19,9 +19,6 @@ function isObject (o) {
 function isString (s) {
   return 'string' === typeof s
 }
-function isObject (o) {
-  return o && 'object' === typeof o
-}
 function isUsageError (err) {
   return usageErrors.indexOf(err.name) >= 0
 }
