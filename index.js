@@ -59,7 +59,7 @@ module.exports = function (argv, manifest, rpc, verbose) {
   delete opts._
   if (Object.keys(opts).length)
     args.push(opts)
-
+  console.error('ARGS', args)
   function usage (cmd, opts) {
     // find the closest full help command. foo.bazCommand becomes foo.help (probably).
 
@@ -125,8 +125,12 @@ module.exports = function (argv, manifest, rpc, verbose) {
 
 
   // route to the command
-  if (!cmd)                return usage([]) //print shallow help
-  else if(opts.help) return usage(cmd, Object.assign({deep: true}, opts))
+  if (!cmd)
+    return usage([]) //print shallow help
+  else if(cmd.length == 1 && cmd[0] == 'help' && !opts.json)
+    return usage((args[0] || '').split('.'), Object.assign({deep: true}, opts))
+  else if(opts.help)
+    return usage(cmd, Object.assign({deep: true}, opts))
 
   var cmdType = get(manifest, cmd)
   if(!cmdType)
@@ -189,5 +193,3 @@ module.exports = function (argv, manifest, rpc, verbose) {
     }
   }
 }
-
-
