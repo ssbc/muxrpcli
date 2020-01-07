@@ -59,7 +59,7 @@ module.exports = function (argv, manifest, rpc, verbose) {
   delete opts._
   if (Object.keys(opts).length)
     args.push(opts)
-  console.error('ARGS', args)
+
   function usage (cmd, opts) {
     // find the closest full help command. foo.bazCommand becomes foo.help (probably).
 
